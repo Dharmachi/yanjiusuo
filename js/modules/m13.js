@@ -13,7 +13,14 @@ window.YJS_MODULES.m13 = {
     { id: 'm13-n5', label: '外角定理', needs: ['act:m13.ext', 'any:q:m13q6|q:m13q7'] },
     { id: 'm13-n6', label: '多边形内角和', needs: ['act:m13.polyin', 'q:m13q8'] },
     { id: 'm13-n7', label: '外角和·绕场一周', needs: ['act:m13.polyout', 'q:m13q9'] },
-    { id: 'm13-n8', label: '重心·综合实践', needs: ['act:m13.gravity'] }
+    { id: 'm13-n8', label: '重心·综合实践', needs: ['act:m13.gravity'] },
+    /* —— 逐节精读（跟课层）—— */
+    { id: 'm13-n9', label: '13.1 双轴分类', needs: ['act:m13.classify', 'any:q:m13s1q1|q:m13s1q2'] },
+    { id: 'm13-n10', label: '13.1 第三角速判', needs: ['act:m13.thirdangle', 'any:q:m13s1q3|q:m13s1q6'] },
+    { id: 'm13-n11', label: '13.2 第三边取值范围', needs: ['act:m13.range', 'any:q:m13s2q2|q:m13s2q3'] },
+    { id: 'm13-n12', label: '13.2 等腰分类讨论', needs: ['act:m13.isodisc', 'any:q:m13s2q5|q:m13s2q6'] },
+    { id: 'm13-n13', label: '13.3 角度推理链', needs: ['act:m13.anglechain', 'any:q:m13s3q2|q:m13s3q4'] },
+    { id: 'm13-n14', label: '13.3 多边形公式', needs: ['act:m13.polyformula', 'any:q:m13s3q6|q:m13s3q8'] }
   ],
   taskIds: ['m13.gravity', 'm13.truss'],
 
@@ -54,6 +61,12 @@ window.YJS_MODULES.m13 = {
           你在运动场玩出来的直觉——转弯角、内错角、拼得上拼不上——现在要一个个立正站好，变成定理。</p>
           <p class="hint">全章带两枚徽章：🧪 = 实验发现（量出来的猜想），✓ = 推理证明（讲清道理）。盯住它们什么时候出现。</p>
         </div>
+      </section>
+
+      <section id="m13-sections">
+        <div class="sec-title"><span class="em">📚</span>逐节精读 · 跟课层</div>
+        <p class="hint" style="margin:0 2px 8px">下面的游乐场先玩懂概念；开学跟课时，一节一节进这里磨考点。</p>
+        <div class="secgrid" id="m13-secgrid"></div>
       </section>
 
       <section id="m13-side">
@@ -191,6 +204,20 @@ window.YJS_MODULES.m13 = {
     `;
 
     root.querySelectorAll('section').forEach(s => s.style.scrollMarginTop = '116px');
+
+    /* ---- 逐节精读入口卡 ---- */
+    (function sectionCards() {
+      const SECS = ['m13s1', 'm13s2', 'm13s3'].map(k => (window.YJS_SECTIONS || {})[k]).filter(Boolean);
+      const grid = $('m13-secgrid');
+      if (!SECS.length) { grid.innerHTML = '<p class="hint">节页建设中。</p>'; return; }
+      const met = k => k.startsWith('any:') ? k.slice(4).split('|').some(x => Y.has(x)) : Y.has(k);
+      grid.innerHTML = SECS.map(s => {
+        const ns = (window.YJS_MODULES.m13.nodes || []).filter(n => (s.nodeIds || []).includes(n.id));
+        const lit = ns.filter(n => n.needs.every(met)).length;
+        return `<div class="seccard" data-go="#/m/m13/${s.sec}"><span class="em">${s.emoji}</span><div><div class="t">${s.title}</div><div class="d">${s.sub} · ★ ${lit}/${ns.length}</div></div><span class="go">›</span></div>`;
+      }).join('');
+      grid.querySelectorAll('[data-go]').forEach(c => c.addEventListener('click', () => { location.hash = c.dataset.go; }));
+    })();
     root.querySelectorAll('.secnav .chip').forEach(c =>
       c.addEventListener('click', () => {
         const t = document.getElementById(c.dataset.to);

@@ -1,4 +1,4 @@
-const VERSION = 'yjs-0.15.0';
+const VERSION = 'yjs-0.16.0';
 const ASSETS = [
   './',
   './index.html',
@@ -36,6 +36,9 @@ const ASSETS = [
   './js/modules/p1s2.js',
   './js/modules/p1s3.js',
   './js/modules/p1s4.js',
+  './js/modules/m13s1.js',
+  './js/modules/m13s2.js',
+  './js/modules/m13s3.js',
   './data/quiz-p1.js',
   './data/quiz-p2.js',
   './data/quiz-p3.js',
@@ -49,7 +52,8 @@ const ASSETS = [
   './data/quiz-p5.js',
   './data/quiz-p4.js',
   './data/quiz-p6.js',
-  './data/quiz-p1s.js'
+  './data/quiz-p1s.js',
+  './data/quiz-m13s.js'
 ];
 
 self.addEventListener('install', e => {
