@@ -13,7 +13,14 @@ window.YJS_MODULES.p1 = {
     { id: 'p1-n5', label: '双图像·读图', needs: ['act:p1.graph', 'any:q:p1q9|q:p1q10'] },
     { id: 'p1-n6', label: '反向驾驶·跟曲线', needs: ['act:p1.chase'] },
     { id: 'p1-n7', label: '平均速度·斜面实验', needs: ['act:p1.slope', 'any:q:p1q7|q:p1q8'] },
-    { id: 'p1-n8', label: '地铁测速·实践', needs: ['act:p1.metro'] }
+    { id: 'p1-n8', label: '地铁测速·实践', needs: ['act:p1.metro'] },
+    /* —— 逐节精读（跟课层）—— */
+    { id: 'p1-n9', label: '1.1 停表与测量基本功', needs: ['act:p1.stopwatch', 'any:q:p1s1q2|q:p1s1q6'] },
+    { id: 'p1-n10', label: '1.1 误差与特殊测量', needs: ['act:p1.special', 'act:p1.error', 'any:q:p1s1q5|q:p1s1q8'] },
+    { id: 'p1-n11', label: '1.2 相对静止的应用', needs: ['act:p1.relstill', 'act:p1.refdrill', 'any:q:p1s2q2|q:p1s2q3'] },
+    { id: 'p1-n12', label: '1.3 速度单位换算', needs: ['act:p1.convert', 'any:q:p1s3q2|q:p1s3q9'] },
+    { id: 'p1-n13', label: '1.3 计算格式与陷阱', needs: ['act:p1.calc', 'any:q:p1s3q6|q:p1s3q8|q:p1s3q10'] },
+    { id: 'p1-n14', label: '1.4 实验报告规范', needs: ['act:p1.slopereport', 'any:q:p1s4q3|q:p1s4q4'] }
   ],
   taskIds: ['p1.metro'],
 
@@ -43,6 +50,12 @@ window.YJS_MODULES.p1 = {
           今天先给你的眼睛装一把尺子，再回答一个比想象中难的问题：<b>你现在是运动的吗？</b></p>
           <p class="hint">这是 9 月开学的第一章物理——现在玩过，开学时你已经用它量过维也纳的地铁了。</p>
         </div>
+      </section>
+
+      <section id="p1-sections">
+        <div class="sec-title"><span class="em">📚</span>逐节精读 · 跟课层</div>
+        <p class="hint" style="margin:0 2px 8px">下面的游乐场先玩懂概念；开学跟课时，一节一节进这里磨考点。</p>
+        <div class="secgrid" id="p1-secgrid"></div>
       </section>
 
       <section id="p1-est">
@@ -211,6 +224,20 @@ window.YJS_MODULES.p1 = {
         const t = document.getElementById(c.dataset.to);
         if (t) t.scrollIntoView({ block: 'start' });
       }));
+
+    /* ---- 逐节精读入口卡 ---- */
+    (function sectionCards() {
+      const SECS = ['p1s1', 'p1s2', 'p1s3', 'p1s4'].map(k => (window.YJS_SECTIONS || {})[k]).filter(Boolean);
+      const grid = $('p1-secgrid');
+      if (!SECS.length) { grid.innerHTML = '<p class="hint">节页建设中。</p>'; return; }
+      const met = k => k.startsWith('any:') ? k.slice(4).split('|').some(x => Y.has(x)) : Y.has(k);
+      grid.innerHTML = SECS.map(s => {
+        const ns = (window.YJS_MODULES.p1.nodes || []).filter(n => (s.nodeIds || []).includes(n.id));
+        const lit = ns.filter(n => n.needs.every(met)).length;
+        return `<div class="seccard" data-go="#/m/p1/${s.sec}"><span class="em">${s.emoji}</span><div><div class="t">${s.title}</div><div class="d">${s.sub} · ★ ${lit}/${ns.length}</div></div><span class="go">›</span></div>`;
+      }).join('');
+      grid.querySelectorAll('[data-go]').forEach(c => c.addEventListener('click', () => { location.hash = c.dataset.go; }));
+    })();
 
     /* ================= ① 估测训练营 ================= */
     (function estLab() {

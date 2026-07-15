@@ -1,6 +1,6 @@
 /* 嫣究所 · 核心：存储 / 证据与图谱 / 路由 / 首页 / 错因本 / 设置 */
 (function () {
-  const VER = '0.14.3';
+  const VER = '0.15.0';
   const MODS = window.YJS_MODULES || {};
 
   /* ================= 存储 ================= */
@@ -84,6 +84,21 @@
     return el;
   }
 
+  /* ================= 考点清单（节页用，勾选绑证据自动打勾） ================= */
+  function checklist(container, items) {
+    const box = h('<div class="ckl"></div>');
+    function refresh() {
+      box.innerHTML = items.map(it => {
+        const ok = it.keys.every(k => needMet(k));
+        return `<div class="cki${ok ? ' ok' : ''}"><span class="ckbox">${ok ? '✅' : '⬜'}</span><span>${it.t}</span></div>`;
+      }).join('');
+    }
+    refresh();
+    const iv = setInterval(refresh, 1200);
+    container.appendChild(box);
+    return { refresh, stop() { clearInterval(iv); } };
+  }
+
   /* ================= 任务数据 ================= */
   function taskGet(id) { return tasks[id] || {}; }
   function taskSet(id, patch) { tasks[id] = Object.assign({}, tasks[id], patch); saveTasks(); }
@@ -117,7 +132,7 @@
   function quizBest(moduleId) { return progress.quizBest[moduleId] || null; }
 
   /* ================= 模块 API ================= */
-  const Y = { esc, h, toast, ev, has, guess, taskGet, taskSet, quizStart, quizBest };
+  const Y = { esc, h, toast, ev, has, guess, checklist, taskGet, taskSet, quizStart, quizBest };
 
   /* ================= 路线图（上线节奏，见蓝图里程碑表） ================= */
   const ROAD = {
@@ -146,8 +161,9 @@
   const btnBack = document.getElementById('btnBack');
   const btnHome = document.getElementById('btnHome');
   let cleanup = null;
+  let backTarget = '#/';
 
-  btnBack.addEventListener('click', () => { location.hash = '#/'; });
+  btnBack.addEventListener('click', () => { location.hash = backTarget; });
   btnHome.addEventListener('click', () => { location.hash = '#/'; });
   tbTitle.addEventListener('click', () => window.scrollTo(0, 0));
 
@@ -155,8 +171,12 @@
     if (cleanup) { try { cleanup(); } catch (e) {} cleanup = null; }
     window.scrollTo(0, 0);
     const hash = location.hash.replace(/^#\/?/, '');
-    const [seg, arg] = hash.split('/');
-    if (seg === 'm' && MODS[arg]) renderModule(MODS[arg]);
+    const parts = hash.split('/');
+    const [seg, arg] = parts;
+    backTarget = '#/';
+    const secKey = seg === 'm' && parts[2] ? arg + parts[2] : null;
+    if (secKey && (window.YJS_SECTIONS || {})[secKey]) { backTarget = '#/m/' + arg; renderSection((window.YJS_SECTIONS)[secKey]); }
+    else if (seg === 'm' && MODS[arg]) renderModule(MODS[arg]);
     else if (seg === 'mistakes') renderMistakes();
     else if (seg === 'settings') renderSettings();
     else renderHome();
@@ -242,6 +262,16 @@
     cleanup = inst && inst.cleanup;
   }
 
+  /* ================= 节页 ================= */
+  function renderSection(sec) {
+    chrome(sec.emoji + ' ' + sec.title, true);
+    view.innerHTML = '';
+    const box = document.createElement('div');
+    view.appendChild(box);
+    const inst = sec.render(box, Y);
+    cleanup = inst && inst.cleanup;
+  }
+
   /* ================= 错因本 ================= */
   function renderMistakes() {
     chrome('📕 错因本', true);
@@ -254,10 +284,13 @@
     const byMod = {};
     mistakes.forEach(m => { (byMod[m.module] = byMod[m.module] || []).push(m); });
 
+    const SEC = window.YJS_SECTIONS || {};
     Object.keys(byMod).forEach(modId => {
       const list = byMod[modId];
-      const modName = MODS[modId] ? MODS[modId].title : modId;
-      const head = h(`<div class="sec-title"><span class="em">${MODS[modId] ? MODS[modId].emoji : '📘'}</span>${modName}
+      const modName = MODS[modId] ? MODS[modId].title
+        : SEC[modId] ? ((MODS[SEC[modId].mod] ? MODS[SEC[modId].mod].title + ' · ' : '') + SEC[modId].title) : modId;
+      const modEmoji = MODS[modId] ? MODS[modId].emoji : (SEC[modId] ? SEC[modId].emoji : '📘');
+      const head = h(`<div class="sec-title"><span class="em">${modEmoji}</span>${modName}
         <button class="btn" style="margin-left:auto">只重做这些错题（${list.length}）</button></div>`);
       view.appendChild(head);
       const quizBox = h('<div class="card" hidden></div>');
@@ -276,11 +309,16 @@
       Object.keys(byTag).forEach(tag => {
         const g = h(`<div class="mgroup"><p><span class="mtag">${esc(tag)}</span><span class="hint">${byTag[tag].length} 题</span></p></div>`);
         byTag[tag].forEach(m => {
-          const correct = m.q.options[m.q.answer];
-          const chosen = m.q.options[m.chosen];
-          g.appendChild(h(`<div class="mitem"><div class="ms">${esc(m.q.stem)}</div>
-            <div class="mmeta">你选了「${esc(chosen)}」 · 正确是「<b>${esc(correct)}</b>」${m.n > 1 ? ` · 错过 ${m.n} 次` : ''}</div>
-            <details><summary class="hint" style="cursor:pointer">看解析</summary><div class="explain">${esc(m.q.explain)}</div></details></div>`));
+          const rich = window.QuizKit.rich;
+          const t = m.q.type || 'single';
+          const correct = t === 'numeric' ? (m.q.answer + (m.q.unit ? ' ' + m.q.unit : ''))
+            : t === 'multi' ? m.q.answers.map(k => m.q.options[k]).join('、')
+            : t === 'order' ? m.q.items.join(' → ')
+            : m.q.options[m.q.answer];
+          const chosen = (typeof m.chosen === 'number') ? m.q.options[m.chosen] : String(m.chosen);
+          g.appendChild(h(`<div class="mitem"><div class="ms">${rich(m.q.stem)}</div>
+            <div class="mmeta">你答的是「${rich(chosen)}」 · 正确是「<b>${rich(correct)}</b>」${m.n > 1 ? ` · 错过 ${m.n} 次` : ''}</div>
+            <details><summary class="hint" style="cursor:pointer">看解析</summary><div class="explain">${rich(m.q.explain)}</div></details></div>`));
         });
         view.appendChild(g);
       });
