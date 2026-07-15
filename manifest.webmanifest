@@ -1,0 +1,13 @@
+{
+  "name": "嫣究所",
+  "short_name": "嫣究所",
+  "description": "立嫣的初二数理研究所",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f3ec",
+  "theme_color": "#f6f3ec",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
